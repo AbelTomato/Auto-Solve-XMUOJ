@@ -98,18 +98,23 @@ def cmd_solve(args: argparse.Namespace) -> None:
     runner = CppRunner(ps["build"])
     for p in problems:
         source = ps["solutions"] / f"{p.index}.cpp"
-        if source.exists() and not args.force:
-            print(f"SKIP {p.index}: solution exists")
-        else:
-            code = solver.solve(p)
-            source.write_text(code + "\n", encoding="utf-8")
-            print(f"SOLVED {p.index}: {source}")
-        results = runner.run_samples(source, p)
-        write_json(ps["solutions"] / f"{p.index}.samples.json", results)
-        if results and not all(bool(r["ok"]) for r in results):
-            print(f"SAMPLE_FAILED {p.index}")
-        else:
-            print(f"SAMPLE_OK {p.index} count={len(results)}")
+        try:
+            if source.exists() and not args.force:
+                print(f"SKIP {p.index}: solution exists")
+            else:
+                code = solver.solve(p)
+                source.write_text(code + "\n", encoding="utf-8")
+                print(f"SOLVED {p.index}: {source}")
+            results = runner.run_samples(source, p)
+            write_json(ps["solutions"] / f"{p.index}.samples.json", results)
+            if results and not all(bool(r["ok"]) for r in results):
+                print(f"SAMPLE_FAILED {p.index}")
+            else:
+                print(f"SAMPLE_OK {p.index} count={len(results)}")
+        except Exception as exc:
+            write_json(ps["solutions"] / f"{p.index}.error.json", {"problem": asdict(p), "error": str(exc)})
+            print(f"SOLVE_FAILED {p.index}: {exc}")
+            continue
 
 
 def cmd_submit(args: argparse.Namespace) -> None:
